@@ -1,143 +1,143 @@
 import React, { Component } from 'react';
-import {Editor, EditorState, getDefaultKeyBinding} from 'draft-js';
+import {Editor, EditorState, getDefaultKeyBinding, RichUtils} from 'draft-js';
 import AutoComplete from './AutoComplete'
-
-function myKeyBindingFn(e: SyntheticKeyboardEvent): string {
-  if (e.keyCode == 13) { // Return Key
-    return 'return'
-  }
-  return getDefaultKeyBinding(e);
-}
 
 class DraftEditor extends Component {
   constructor(props, context) {
     super(props, context);
 
     this.hashlist = [ "United States", "China", "Japan", "Germany", "United Kingdom", "France", "India", "Italy", "Brazil", "Canada", "South Korea", "Russia", "Australia", "Spain", "Mexico"];
-
     this.atlist = [ "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
 
-
-    this.state = {editorState: EditorState.createEmpty(), autoState: 'default', selectedId: 0, hashlist: this.hashlist, atlist: this.atlist};
-
-    this.currtext = '';
-    this.autostart = '';
-    this.lastState = 'default';
-
-    this.onChange = (editorState) => {
-      const text = editorState.getCurrentContent().getLastBlock().getText();
-      this.stateChange(text);
-      this.changeAutoStr(text);
-      this.setState({editorState});
-    };
-
+    this.state = {editorState: EditorState.createEmpty(), autoState: 'default', selectedId: 0,  hashlist: this.hashlist, atlist: this.atlist};
+    this.prefix = '';
+    this.onChange = (editorState) => { this.setState({editorState}); };
   }
 
-  downKeyPress(e) {
-    const { selectedId, autoState } = this.state;
-    const listlen = autoState == 'hash'?this.liveHashlist.length:this.liveAtlist.length;
+  returnToDefault() {
+    this.setState({autoState: 'default'});
+  }
+
+  getSelected(autoState, selectedId, hashlist, atlist) {
+    if (autoState != 'default') {
+      if (autoState == 'hash') {
+        return hashlist[selectedId];
+      } else if (autoState == 'at') {
+        return atlist[selectedId];
+      }
+    }
+  }
+
+  handleTab(e) {
+    const { autoState, hashlist, atlist, selectedId} = this.state;
+    const selected = this.getSelected(autoState, selectedId, hashlist, atlist);
+    console.log(selected);
+
+    if (autoState != 'default') {
+      e.preventDefault();
+      this.returnToDefault();
+    }
+  }
+
+  handleReturn(e) {
+    const { autoState, hashlist, atlist, selectedId} = this.state;
+    const selected = this.getSelected(autoState, selectedId, hashlist, atlist);
+    console.log(selected);
+
+    if (autoState != 'default') {
+      e.preventDefault();
+      this.returnToDefault();
+      return true;
+    }
+
+    return false;
+  }
+
+
+  handleKeyCommand(command) {
+    const { autoState } = this.state;
+
+    if (command == 'backspace') {
+      if (autoState != 'default'){
+        if (this.prefix == '') {
+          this.returnToDefault();
+        }
+        this.prefix = this.prefix.slice(0,-1);
+        this.changeAutoPrefix();
+      }
+    }
+    return false;
+  }
+
+  handleDownArrow(e) {
+    const { selectedId, autoState, hashlist, atlist } = this.state;
+    const listlen = autoState == 'hash'?hashlist.length:atlist.length;
     const sid = Math.min(selectedId + 1, listlen-1);
     this.setState({selectedId: sid});
     e.preventDefault();
   }
 
-  upKeyPress(e) {
+  handleUpArrow(e) {
     const sid = Math.max(this.state.selectedId - 1, 0);
     this.setState({selectedId: sid});
     e.preventDefault();
   }
 
-  tabDown(e) {
-    const { autoState, hashlist, atlist, selectedId} = this.state;
-    if (autoState != 'default') {
-      e.preventDefault();
-      this.setState({autoState: 'default'});
+  changeAutoPrefix() {
+    this.liveHashlist = this.hashlist.filter((x) =>
+        x.toUpperCase().startsWith(this.prefix.toUpperCase()));
+    this.liveAtlist = this.atlist.filter((x) =>
+        x.toUpperCase().startsWith(this.prefix.toUpperCase()));
 
-      if (autoState == 'hash') {
-        console.log(hashlist[selectedId]);
-      } else if (autoState == 'at') {
-        console.log(atlist[selectedId]);
-      }
-
-    }
+    this.setState({
+      selectedId: 0,
+      hashlist: this.liveHashlist,
+      atlist: this.liveAtlist
+    });
   }
 
-  handleReturn(command: string): boolean {
+  handleKeyUp(str) {
     const { autoState } = this.state;
-    if (command == 'return') {
-      if (autoState != 'default') {
-        this.setState({autoState: 'default'});
-      }
-      return true
-    }
-    return false
-  }
-
-  getDifference(a, b) {
-    let i = 0;
-    let j = 0;
-    let result = "";
-    while (j < b.length) {
-        if (a[i] != b[j] || i == a.length) 
-          result += b[j];
-        else 
-          i++;
-        j++;
-    }
-    return result;
-  }
-
-  changeAutoStr(autostr) {
-    const { autoState } = this.state;
-    const prefix = this.getDifference(this.autostart, autostr);
-    console.log(prefix);
 
     if (autoState != 'default') {
-      this.liveHashlist = this.hashlist.filter((x) =>
-          x.toUpperCase().startsWith(prefix.toUpperCase()));
-      this.liveAtlist = this.atlist.filter((x) =>
-          x.toUpperCase().startsWith(prefix.toUpperCase()));
-
-      this.setState({
-        selectedId: 0,
-        hashlist: this.liveHashlist,
-        atlist: this.liveAtlist
-      });
-    }
-  }
-
-
-  stateChange(text) {
-    const { autoState } = this.state;
-    const diff = this.getDifference(this.currtext, text); 
-    let currstate = '';
-
-    if (diff == '@') {
-      console.log('Just typed @.');
-
-      currstate = 'at';
-      this.setState({autoState: currstate});
-    } else if (diff == '#'){
-      console.log('Just typed #.');
-
-      currstate = 'hash';
-      this.setState({autoState: currstate});
+      console.log(this.prefix);
+      this.prefix += str;
+      this.changeAutoPrefix();
     }
 
-    if (currstate != this.lastState && currstate != 'default') {
-      this.autostart = this.currtext;
+    if (str == '@') {
+      console.log("at state");
+      this.prefix = '';
+      this.setState({autoState: 'at', selectedId: 0});
+    } else if ( str == '#' ) {
+      console.log("hash state");
+      this.prefix = '';
+      this.setState({autoState: 'hash', selectedId: 0});
     }
 
-    this.currtext = text;
-    this.lastState = currstate;
   }
 
   render() {
     const { autoState, editorState, selectedId, atlist, hashlist } = this.state;
     return (
             <div>
-              <Editor editorState={editorState} onChange={this.onChange} onDownArrow={this.downKeyPress.bind(this)} onUpArrow={this.upKeyPress.bind(this)} onTab={this.tabDown.bind(this)} keyBindingFn={myKeyBindingFn} handleKeyCommand={this.handleReturn.bind(this)}/>
-              <AutoComplete autoState={autoState} selectedId={selectedId} hashlist={hashlist} atlist={atlist}/>
+              <Editor
+                editorState={editorState}
+                onChange={this.onChange}
+                onDownArrow={this.handleDownArrow.bind(this)}
+                onUpArrow={this.handleUpArrow.bind(this)}
+                onTab={this.handleTab.bind(this)}
+                handleBeforeInput={this.handleKeyUp.bind(this)}
+                handleKeyCommand={this.handleKeyCommand.bind(this)}
+                handleReturn={this.handleReturn.bind(this)}
+              />
+
+              <AutoComplete
+                autoState={autoState}
+                selectedId={selectedId}
+                hashlist={hashlist}
+                atlist={atlist}
+              />
             </div>
           );
 
