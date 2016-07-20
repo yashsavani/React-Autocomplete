@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Editor, EditorState, getDefaultKeyBinding, RichUtils} from 'draft-js';
+import {Editor, EditorState, SelectionState, Entity, Modifier} from 'draft-js';
 import AutoComplete from './AutoComplete'
 
 class DraftEditor extends Component {
@@ -20,32 +20,65 @@ class DraftEditor extends Component {
 
   getSelected(autoState, selectedId, activelist) {
     if (autoState != 'default') {
-      return activelist[selectedId];
+      return (autoState=='at'?'@':'#')+activelist[selectedId];
     }
   }
 
   handleTab(e) {
+    let { editorState } = this.state;
     const { autoState, activelist, selectedId} = this.state;
     const selected = this.getSelected(autoState, selectedId, activelist);
     console.log(selected);
+    this.updateEditor(selected);
 
     if (autoState != 'default') {
       e.preventDefault();
       this.returnToDefault();
     }
+  }
+
+  updateEditor(str){
+    let { editorState } = this.state;
+    const { autoState  } = this.state;
+
+    const content = editorState.getCurrentContent();
+    const selection = editorState.getSelection();
+    const block = content.getBlockForKey(selection.getAnchorKey());
+    const text = block.getText().slice(0, selection.getEndOffset());
+    console.log(text);
+    console.log(this.prefix);
+    const entityKey = Entity.create(autoState, 'IMMUTABLE', {name: str});
+    const replaced = Modifier.replaceText(
+          content,
+          new SelectionState({
+            anchorKey: block.getKey(),
+            anchorOffset: selection.getEndOffset() - this.prefix.length - 1,
+            focusKey: block.getKey(),
+            focusOffset: selection.getEndOffset()
+          }),
+          str,
+          null,
+          entityKey
+        );
+    editorState = EditorState.push(
+          editorState,
+          replaced,
+          'replace-text'
+        )
+      this.setState({editorState});
   }
 
   handleReturn(e) {
     const { autoState, activelist, selectedId} = this.state;
     const selected = this.getSelected(autoState, selectedId, activelist);
     console.log(selected);
+    this.updateEditor(selected);
 
     if (autoState != 'default') {
       e.preventDefault();
       this.returnToDefault();
       return true;
     }
-
     return false;
   }
 
