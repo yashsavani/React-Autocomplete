@@ -8,15 +8,8 @@ class AutoComplete extends Component {
   }
 
   render() {
-
     let opts = [];
-    if (this.props.autoState == 'hash') {
-      this.props.hashlist.forEach((el,i,arr) => opts.push([i,el]))
-    } else if (this.props.autoState == 'at') {
-      this.props.atlist.forEach((el,i,arr) => opts.push([i,el]))
-    } else {
-      opts = [];
-    }
+    this.props.activelist.forEach((el,i,arr) => opts.push([i,el]))
 
     return (
         <div>

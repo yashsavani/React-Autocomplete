@@ -9,28 +9,24 @@ class DraftEditor extends Component {
     this.hashlist = [ "United States", "China", "Japan", "Germany", "United Kingdom", "France", "India", "Italy", "Brazil", "Canada", "South Korea", "Russia", "Australia", "Spain", "Mexico"];
     this.atlist = [ "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
 
-    this.state = {editorState: EditorState.createEmpty(), autoState: 'default', selectedId: 0,  hashlist: this.hashlist, atlist: this.atlist};
+    this.state = {editorState: EditorState.createEmpty(), autoState: 'default', selectedId: 0, activelist: []};
     this.prefix = '';
     this.onChange = (editorState) => { this.setState({editorState}); };
   }
 
   returnToDefault() {
-    this.setState({autoState: 'default'});
+    this.setState({autoState: 'default', activelist: []});
   }
 
-  getSelected(autoState, selectedId, hashlist, atlist) {
+  getSelected(autoState, selectedId, activelist) {
     if (autoState != 'default') {
-      if (autoState == 'hash') {
-        return hashlist[selectedId];
-      } else if (autoState == 'at') {
-        return atlist[selectedId];
-      }
+      return activelist[selectedId];
     }
   }
 
   handleTab(e) {
-    const { autoState, hashlist, atlist, selectedId} = this.state;
-    const selected = this.getSelected(autoState, selectedId, hashlist, atlist);
+    const { autoState, activelist, selectedId} = this.state;
+    const selected = this.getSelected(autoState, selectedId, activelist);
     console.log(selected);
 
     if (autoState != 'default') {
@@ -40,8 +36,8 @@ class DraftEditor extends Component {
   }
 
   handleReturn(e) {
-    const { autoState, hashlist, atlist, selectedId} = this.state;
-    const selected = this.getSelected(autoState, selectedId, hashlist, atlist);
+    const { autoState, activelist, selectedId} = this.state;
+    const selected = this.getSelected(autoState, selectedId, activelist);
     console.log(selected);
 
     if (autoState != 'default') {
@@ -54,7 +50,7 @@ class DraftEditor extends Component {
   }
 
 
-  handleKeyCommand(command) {
+  handleKeyCommand(command) { // Backspace
     const { autoState } = this.state;
 
     if (command == 'backspace') {
@@ -70,9 +66,8 @@ class DraftEditor extends Component {
   }
 
   handleDownArrow(e) {
-    const { selectedId, autoState, hashlist, atlist } = this.state;
-    const listlen = autoState == 'hash'?hashlist.length:atlist.length;
-    const sid = Math.min(selectedId + 1, listlen-1);
+    const { selectedId, autoState, activelist } = this.state;
+    const sid = Math.min(selectedId + 1, activelist.length-1);
     this.setState({selectedId: sid});
     e.preventDefault();
   }
@@ -84,16 +79,24 @@ class DraftEditor extends Component {
   }
 
   changeAutoPrefix() {
-    this.liveHashlist = this.hashlist.filter((x) =>
-        x.toUpperCase().startsWith(this.prefix.toUpperCase()));
-    this.liveAtlist = this.atlist.filter((x) =>
-        x.toUpperCase().startsWith(this.prefix.toUpperCase()));
+    const { autoState } = this.state;
 
-    this.setState({
-      selectedId: 0,
-      hashlist: this.liveHashlist,
-      atlist: this.liveAtlist
-    });
+    if (autoState != 'default') {
+      let potentiallist = [];
+
+      if (autoState == 'hash') {
+        potentiallist = this.hashlist.filter((x) =>
+          x.toUpperCase().startsWith(this.prefix.toUpperCase()));
+      } else {
+        potentiallist = this.atlist.filter((x) =>
+          x.toUpperCase().startsWith(this.prefix.toUpperCase()));
+      }
+
+      this.setState({
+        selectedId: 0,
+        activelist: potentiallist
+      });
+    }
   }
 
   handleKeyUp(str) {
@@ -118,7 +121,7 @@ class DraftEditor extends Component {
   }
 
   render() {
-    const { autoState, editorState, selectedId, atlist, hashlist } = this.state;
+    const { autoState, editorState, selectedId, activelist } = this.state;
     return (
             <div>
               <Editor
@@ -135,8 +138,7 @@ class DraftEditor extends Component {
               <AutoComplete
                 autoState={autoState}
                 selectedId={selectedId}
-                hashlist={hashlist}
-                atlist={atlist}
+                activelist={activelist}
               />
             </div>
           );
