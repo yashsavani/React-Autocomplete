@@ -39,14 +39,11 @@ class DraftEditor extends Component {
 
   updateEditor(str){
     let { editorState } = this.state;
-    const { autoState  } = this.state;
+    const { autoState } = this.state;
 
     const content = editorState.getCurrentContent();
     const selection = editorState.getSelection();
     const block = content.getBlockForKey(selection.getAnchorKey());
-    const text = block.getText().slice(0, selection.getEndOffset());
-    console.log(text);
-    console.log(this.prefix);
     const entityKey = Entity.create(autoState, 'IMMUTABLE', {name: str});
     const replaced = Modifier.replaceText(
           content,
@@ -54,18 +51,19 @@ class DraftEditor extends Component {
             anchorKey: block.getKey(),
             anchorOffset: selection.getEndOffset() - this.prefix.length - 1,
             focusKey: block.getKey(),
-            focusOffset: selection.getEndOffset()
+            focusOffset: selection.getEndOffset(),
+            hasFocus: true
           }),
           str,
           null,
           entityKey
-        );
+      );
     editorState = EditorState.push(
           editorState,
           replaced,
           'replace-text'
-        )
-      this.setState({editorState});
+      );
+    this.setState({editorState});
   }
 
   handleReturn(e) {
