@@ -164,7 +164,6 @@ class DraftEditor extends Component {
         potentialList = this.personlist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       }
-      console.log(potentialList);
 
       this.setState({
         selectedId: 0,
@@ -215,6 +214,7 @@ class DraftEditor extends Component {
     const { autoState, editorState, selectedId, activelist } = this.state;
     return (
             <div className="content">
+              <h3>Type Below Here.</h3>
               <Editor
                 editorState={editorState}
                 onChange={this.onChange}
@@ -224,7 +224,6 @@ class DraftEditor extends Component {
                 handleBeforeInput={this.handleKeyUp.bind(this)}
                 handleKeyCommand={this.handleKeyCommand.bind(this)}
                 handleReturn={this.handleReturn.bind(this)}
-                placeholder="Type below here."
               />
 
               <AutoComplete
