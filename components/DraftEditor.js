@@ -63,6 +63,10 @@ class DraftEditor extends Component {
     this.onChange = (editorState) => { this.setState({editorState}); };
   }
 
+  componentDidMount() {
+    this.refs.editor.focus();
+  }
+
   returnToDefault() {
     this.setState({autoState: 'default', activelist: []});
   }
@@ -214,7 +218,6 @@ class DraftEditor extends Component {
     const { autoState, editorState, selectedId, activelist } = this.state;
     return (
             <div className="content">
-              <h3>Type Below Here.</h3>
               <Editor
                 editorState={editorState}
                 onChange={this.onChange}
@@ -224,6 +227,7 @@ class DraftEditor extends Component {
                 handleBeforeInput={this.handleKeyUp.bind(this)}
                 handleKeyCommand={this.handleKeyCommand.bind(this)}
                 handleReturn={this.handleReturn.bind(this)}
+                ref="editor"
               />
 
               <AutoComplete
