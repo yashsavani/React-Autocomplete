@@ -12,8 +12,7 @@ class AutoComplete extends Component {
     this.props.activelist.forEach((el,i,arr) => opts.push([i,el]))
 
     return (
-        <div>
-          <div>{this.props.autoState}</div>
+        <div className="nav">
           <div id="autobox" className={this.props.autoState}>
             <ul>
               {opts.map((listValue) => <ListItem key={listValue[0]} listValue={listValue} selected={listValue[0] == this.props.selectedId} />)}

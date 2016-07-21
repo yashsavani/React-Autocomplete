@@ -132,7 +132,6 @@ class DraftEditor extends Component {
           this.returnToDefault();
         }
         this.matchString = this.getMatchString().slice(0,-1);
-        console.log(this.matchString);
         this.changeAutoPrefix();
       }
     }
@@ -177,9 +176,9 @@ class DraftEditor extends Component {
     const { autoState, editorState } = this.state;
     const content = editorState.getCurrentContent();
     const selection = editorState.getSelection();
-    const block = content.getBlockForKey(selection.getAnchorKey());
-    const lookChar = autoState == 'person'?'@':'#';
-    return block.getText().slice(block.getText().lastIndexOf(lookChar)+1, selection.getAnchorOffset());
+    const text = content.getBlockForKey(selection.getAnchorKey()).text;
+    const key = autoState == 'person'?'@':'#';
+    return text.slice(text.lastIndexOf(key)+1, selection.getAnchorOffset());
   }
 
   handleKeyUp(str) {
@@ -194,7 +193,6 @@ class DraftEditor extends Component {
 
     if (autoState != 'default') {
       this.matchString = this.getMatchString() + str;
-      console.log(this.matchString);
       this.changeAutoPrefix();
     }
 
@@ -213,7 +211,7 @@ class DraftEditor extends Component {
   render() {
     const { autoState, editorState, selectedId, activelist } = this.state;
     return (
-            <div>
+            <div className="content">
               <Editor
                 editorState={editorState}
                 onChange={this.onChange}
@@ -223,6 +221,7 @@ class DraftEditor extends Component {
                 handleBeforeInput={this.handleKeyUp.bind(this)}
                 handleKeyCommand={this.handleKeyCommand.bind(this)}
                 handleReturn={this.handleReturn.bind(this)}
+                placeholder="Type below here."
               />
 
               <AutoComplete
