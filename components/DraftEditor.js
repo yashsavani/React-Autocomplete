@@ -1,24 +1,64 @@
 import React, { Component } from 'react';
-import {Editor, EditorState, SelectionState, Entity, Modifier} from 'draft-js';
+import {Editor, EditorState, SelectionState, Entity, Modifier, CompositeDecorator} from 'draft-js';
 import AutoComplete from './AutoComplete'
 
-const styleMap = {
-  'HASHTAG': {
-    color: '#77DD77'
+const styles = {
+  person: {
+    color: 'red',
   },
-  'PERSON': {
-    color: '#C23B22'
-  }
+  hashtag: {
+    color: 'green',
+  },
+};
+
+function findPerson(contentBlock, callback) {
+  contentBlock.findEntityRanges(
+      (character) => {
+        const entityKey = character.getEntity();
+        return (entityKey !== null && Entity.get(entityKey).getType() === 'person');
+      },
+      callback
+    );
+}
+
+function findHashtag(contentBlock, callback) {
+  contentBlock.findEntityRanges(
+      (character) => {
+        const entityKey = character.getEntity();
+        return (entityKey !== null && Entity.get(entityKey).getType() === 'hashtag');
+      },
+      callback
+    );
+}
+
+const PersonSpan = (props) => {
+  return <span style={styles.person}>{props.children}</span>;
+};
+
+const HashtagSpan = (props) => {
+  return <span style={styles.hashtag}>{props.children}</span>;
 };
 
 class DraftEditor extends Component {
+
   constructor(props, context) {
     super(props, context);
+
+    const decorator = new CompositeDecorator([
+      {
+        strategy: findPerson,
+        component: PersonSpan,
+      },
+      {
+        strategy: findHashtag,
+        component: HashtagSpan,
+      },
+    ]);
 
     this.hashtaglist = [ "United States", "China", "Japan", "Germany", "United Kingdom", "France", "India", "Italy", "Brazil", "Canada", "South Korea", "Russia", "Australia", "Spain", "Mexico"];
     this.personlist = [ "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
 
-    this.state = {editorState: EditorState.createEmpty(), autoState: 'default', selectedId: 0, activelist: []};
+    this.state = {editorState: EditorState.createEmpty(decorator), autoState: 'default', selectedId: 0, activelist: []};
     this.matchString = '';
     this.onChange = (editorState) => { this.setState({editorState}); };
   }
@@ -37,9 +77,9 @@ class DraftEditor extends Component {
     let { editorState } = this.state;
     const { autoState } = this.state;
 
-    let content = editorState.getCurrentContent();
-    let selection = editorState.getSelection();
-    let block = content.getBlockForKey(selection.getAnchorKey());
+    const content = editorState.getCurrentContent();
+    const selection = editorState.getSelection();
+    const block = content.getBlockForKey(selection.getAnchorKey());
     const entityKey = Entity.create(autoState, 'IMMUTABLE', {name: str});
     const replaced = Modifier.replaceText(
           content,
@@ -51,29 +91,10 @@ class DraftEditor extends Component {
             hasFocus: true
           }),
           str,
-          [autoState.toUpperCase()],
+          null,
           entityKey
       );
-    editorState = EditorState.push(
-          editorState,
-          replaced,
-          'replace-text'
-      );
-    this.setState({editorState});
-
-    content = editorState.getCurrentContent();
-    selection = editorState.getSelection();
-    block = content.getBlockForKey(selection.getAnchorKey());
-    const inserted = Modifier.insertText(
-          content,
-          selection,
-          ' '
-      );
-    editorState = EditorState.push(
-          editorState,
-          inserted,
-          'insert-text'
-      );
+    editorState = EditorState.push(editorState, replaced, 'replace-text');
     this.setState({editorState});
   }
 
@@ -191,7 +212,6 @@ class DraftEditor extends Component {
                 handleBeforeInput={this.handleKeyUp.bind(this)}
                 handleKeyCommand={this.handleKeyCommand.bind(this)}
                 handleReturn={this.handleReturn.bind(this)}
-                customStyleMap={styleMap}
               />
 
               <AutoComplete
