@@ -131,7 +131,8 @@ class DraftEditor extends Component {
         if (this.matchString == '') {
           this.returnToDefault();
         }
-        this.matchString = this.matchString.slice(0,-1);
+        this.matchString = this.getMatchString().slice(0,-1);
+        console.log(this.matchString);
         this.changeAutoPrefix();
       }
     }
@@ -172,6 +173,15 @@ class DraftEditor extends Component {
     }
   }
 
+  getMatchString() {
+    const { autoState, editorState } = this.state;
+    const content = editorState.getCurrentContent();
+    const selection = editorState.getSelection();
+    const block = content.getBlockForKey(selection.getAnchorKey());
+    const lookChar = autoState == 'person'?'@':'#';
+    return block.getText().slice(block.getText().lastIndexOf(lookChar)+1, selection.getAnchorOffset());
+  }
+
   handleKeyUp(str) {
     const { autoState, selectedId, activelist } = this.state;
 
@@ -183,7 +193,8 @@ class DraftEditor extends Component {
     }
 
     if (autoState != 'default') {
-      this.matchString += str;
+      this.matchString = this.getMatchString() + str;
+      console.log(this.matchString);
       this.changeAutoPrefix();
     }
 
