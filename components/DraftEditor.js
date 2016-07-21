@@ -41,7 +41,6 @@ class DraftEditor extends Component {
     let selection = editorState.getSelection();
     let block = content.getBlockForKey(selection.getAnchorKey());
     const entityKey = Entity.create(autoState, 'IMMUTABLE', {name: str});
-    console.log(autoState.toUpperCase());
     const replaced = Modifier.replaceText(
           content,
           new SelectionState({
@@ -80,11 +79,10 @@ class DraftEditor extends Component {
 
   handleTab(e) {
     const { autoState, activelist, selectedId} = this.state;
-    const matchString = this.getMatchString(autoState, selectedId, activelist);
-    console.log(matchString);
-    this.updateEditor(matchString);
-
     if (autoState != 'default') {
+      const matchString = this.getMatchString(autoState, selectedId, activelist);
+      this.updateEditor(matchString);
+
       e.preventDefault();
       this.returnToDefault();
     }
@@ -92,11 +90,10 @@ class DraftEditor extends Component {
 
   handleReturn(e) {
     const { autoState, activelist, selectedId} = this.state;
-    const matchString = this.getMatchString(autoState, selectedId, activelist);
-    console.log(matchString);
-    this.updateEditor(matchString);
-
     if (autoState != 'default') {
+      const matchString = this.getMatchString(autoState, selectedId, activelist);
+      this.updateEditor(matchString);
+
       e.preventDefault();
       this.returnToDefault();
       return true;
@@ -155,10 +152,9 @@ class DraftEditor extends Component {
   }
 
   handleKeyUp(str) {
-    const { autoState } = this.state;
+    const { autoState, selectedId, activelist } = this.state;
 
     if (autoState != 'default') {
-      console.log(this.prefix);
       this.prefix += str;
       this.changeAutoPrefix();
     }
@@ -172,7 +168,6 @@ class DraftEditor extends Component {
       this.prefix = '';
       this.setState({autoState: 'hashtag', selectedId: 0});
     }
-
   }
 
   render() {
