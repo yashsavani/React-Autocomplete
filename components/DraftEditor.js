@@ -170,6 +170,9 @@ class DraftEditor extends Component {
         potentialList = this.personlist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       }
+      if (this.matchString != '') {
+        potentialList.unshift(this.matchString);
+      }
 
       this.setState({
         selectedId: 0,
