@@ -157,7 +157,7 @@ class DraftEditor extends Component {
     if (autoState != 'default' || state != 'default') {
       let potentialList = [];
 
-      if (autoState == 'hashtag') {
+      if (autoState == 'hashtag' || state == 'hashtag') {
         potentialList = this.hashtaglist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       } else {

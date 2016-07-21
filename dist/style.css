@@ -124,7 +124,7 @@ Nav
 .nav li
 {
 	display: block;
-	padding: .7em 1.25em;
+	padding: .2em 1em;
 	text-decoration: none;
 	border-bottom: 1px solid gray;
 }
@@ -266,3 +266,10 @@ Wide styles
   color: gray;
 }
 
+.default {
+  display: none;
+}
+
+.person, .hashtag {
+  display: inline-block;
+}
