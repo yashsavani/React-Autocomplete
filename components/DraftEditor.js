@@ -151,23 +151,24 @@ class DraftEditor extends Component {
     e.preventDefault();
   }
 
-  changeAutoPrefix() {
+  changeAutoPrefix(state='default') {
     const { autoState } = this.state;
 
-    if (autoState != 'default') {
-      let potentiallist = [];
+    if (autoState != 'default' || state != 'default') {
+      let potentialList = [];
 
       if (autoState == 'hashtag') {
-        potentiallist = this.hashtaglist.filter((x) =>
+        potentialList = this.hashtaglist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       } else {
-        potentiallist = this.personlist.filter((x) =>
+        potentialList = this.personlist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       }
+      console.log(potentialList);
 
       this.setState({
         selectedId: 0,
-        activelist: potentiallist
+        activelist: potentialList
       });
     }
   }
@@ -199,10 +200,12 @@ class DraftEditor extends Component {
     if (str == '@') {
       console.log("person state");
       this.matchString = '';
+      this.changeAutoPrefix('person');
       this.setState({autoState: 'person', selectedId: 0});
     } else if ( str == '#' ) {
       console.log("hashtag state");
       this.matchString = '';
+      this.changeAutoPrefix('hashtag');
       this.setState({autoState: 'hashtag', selectedId: 0});
     }
     return false;
