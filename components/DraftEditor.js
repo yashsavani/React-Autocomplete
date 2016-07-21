@@ -106,7 +106,8 @@ class DraftEditor extends Component {
     const { autoState, activelist, selectedId} = this.state;
     if (autoState != 'default') {
       const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
-      this.updateEditor(selectedOption);
+      const stateChar = autoState=='person'?'@':'#';
+      this.updateEditor(selectedOption==stateChar+'undefined'?stateChar+this.matchString:selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -117,7 +118,8 @@ class DraftEditor extends Component {
     const { autoState, activelist, selectedId} = this.state;
     if (autoState != 'default') {
       const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
-      this.updateEditor(selectedOption);
+      const stateChar = autoState=='person'?'@':'#';
+      this.updateEditor(selectedOption==stateChar+'undefined'?stateChar+this.matchString:selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -190,7 +192,7 @@ class DraftEditor extends Component {
 
     if (autoState == 'hashtag' && str == ' ') {
       const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
-      this.updateEditor(selectedOption);
+      this.updateEditor(selectedOption=='#undefined'?'#'+this.matchString:selectedOption);
       this.returnToDefault();
       return true;
     }
