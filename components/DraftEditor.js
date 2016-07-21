@@ -19,7 +19,7 @@ class DraftEditor extends Component {
     this.personlist = [ "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
 
     this.state = {editorState: EditorState.createEmpty(), autoState: 'default', selectedId: 0, activelist: []};
-    this.prefix = '';
+    this.matchString = '';
     this.onChange = (editorState) => { this.setState({editorState}); };
   }
 
@@ -27,7 +27,7 @@ class DraftEditor extends Component {
     this.setState({autoState: 'default', activelist: []});
   }
 
-  getMatchString(autoState, selectedId, activelist) {
+  getSelectedOption(autoState, selectedId, activelist) {
     if (autoState != 'default') {
       return (autoState=='person'?'@':'#')+activelist[selectedId];
     }
@@ -45,7 +45,7 @@ class DraftEditor extends Component {
           content,
           new SelectionState({
             anchorKey: block.getKey(),
-            anchorOffset: selection.getEndOffset() - this.prefix.length - 1,
+            anchorOffset: selection.getEndOffset() - this.matchString.length - 1,
             focusKey: block.getKey(),
             focusOffset: selection.getEndOffset(),
             hasFocus: true
@@ -80,8 +80,8 @@ class DraftEditor extends Component {
   handleTab(e) {
     const { autoState, activelist, selectedId} = this.state;
     if (autoState != 'default') {
-      const matchString = this.getMatchString(autoState, selectedId, activelist);
-      this.updateEditor(matchString);
+      const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
+      this.updateEditor(selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -91,8 +91,8 @@ class DraftEditor extends Component {
   handleReturn(e) {
     const { autoState, activelist, selectedId} = this.state;
     if (autoState != 'default') {
-      const matchString = this.getMatchString(autoState, selectedId, activelist);
-      this.updateEditor(matchString);
+      const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
+      this.updateEditor(selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -107,10 +107,10 @@ class DraftEditor extends Component {
 
     if (command == 'backspace') {
       if (autoState != 'default'){
-        if (this.prefix == '') {
+        if (this.matchString == '') {
           this.returnToDefault();
         }
-        this.prefix = this.prefix.slice(0,-1);
+        this.matchString = this.matchString.slice(0,-1);
         this.changeAutoPrefix();
       }
     }
@@ -138,10 +138,10 @@ class DraftEditor extends Component {
 
       if (autoState == 'hashtag') {
         potentiallist = this.hashtaglist.filter((x) =>
-          x.toUpperCase().startsWith(this.prefix.toUpperCase()));
+          x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       } else {
         potentiallist = this.personlist.filter((x) =>
-          x.toUpperCase().startsWith(this.prefix.toUpperCase()));
+          x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       }
 
       this.setState({
@@ -154,20 +154,28 @@ class DraftEditor extends Component {
   handleKeyUp(str) {
     const { autoState, selectedId, activelist } = this.state;
 
+    if (autoState == 'hashtag' && str == ' ') {
+      const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
+      this.updateEditor(selectedOption);
+      this.returnToDefault();
+      return true;
+    }
+
     if (autoState != 'default') {
-      this.prefix += str;
+      this.matchString += str;
       this.changeAutoPrefix();
     }
 
     if (str == '@') {
       console.log("person state");
-      this.prefix = '';
+      this.matchString = '';
       this.setState({autoState: 'person', selectedId: 0});
     } else if ( str == '#' ) {
       console.log("hashtag state");
-      this.prefix = '';
+      this.matchString = '';
       this.setState({autoState: 'hashtag', selectedId: 0});
     }
+    return false;
   }
 
   render() {
