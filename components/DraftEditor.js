@@ -209,12 +209,12 @@ class DraftEditor extends Component {
       console.log("person state");
       this.matchString = '';
       this.changeAutoPrefix('person');
-      this.setState({autoState: 'person', selectedId: 0});
+      this.setState({autoState: 'person', selectedId: 0, activeList: this.personList});
     } else if ( str == '#' ) {
       console.log("hashtag state");
       this.matchString = '';
       this.changeAutoPrefix('hashtag');
-      this.setState({autoState: 'hashtag', selectedId: 0});
+      this.setState({autoState: 'hashtag', selectedId: 0, activeList: this.hashtagList});
     }
     return false;
   }
