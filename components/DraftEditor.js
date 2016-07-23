@@ -208,13 +208,13 @@ class DraftEditor extends Component {
     if (str == '@') {
       console.log("person state");
       this.matchString = '';
+      this.setState({autoState: 'person'});
       this.changeAutoPrefix('person');
-      this.setState({autoState: 'person', selectedId: 0, activeList: this.personList});
     } else if ( str == '#' ) {
       console.log("hashtag state");
       this.matchString = '';
+      this.setState({autoState: 'hashtag'});
       this.changeAutoPrefix('hashtag');
-      this.setState({autoState: 'hashtag', selectedId: 0, activeList: this.hashtagList});
     }
     return false;
   }
