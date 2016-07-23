@@ -94,6 +94,7 @@ class DraftEditor extends Component {
   }
 
   returnToDefault() {
+    this.matchString = '';
     this.setState({autocompleteMode: 'default', activelist: []});
   }
 
@@ -118,13 +119,14 @@ class DraftEditor extends Component {
   updateEditor(str){
     const { autocompleteMode } = this.state;
     const { content, selection, block } = this.getEditorStateProperties();
+    const offset = autocompleteMode == 'relation'?2:1;
 
     const entityKey = Entity.create(autocompleteMode, 'IMMUTABLE', {name: str});
     const replaceWithMatchString = Modifier.replaceText(
           content,
           new SelectionState({
             anchorKey: block.getKey(),
-            anchorOffset: selection.getEndOffset() - this.matchString.length - 1,
+            anchorOffset: selection.getEndOffset() - this.matchString.length - offset,
             focusKey: block.getKey(),
             focusOffset: selection.getEndOffset(),
             hasFocus: true
@@ -189,21 +191,8 @@ class DraftEditor extends Component {
     const finMode = mode == undefined ? autocompleteMode : mode;
 
     if (finMode != 'default') {
-
-      const modeList = (() => {
-        switch (finMode) {
-          case 'hashtag':
-            return this.hashtaglist;
-          case 'person':
-            return this.personlist;
-          case 'relation':
-            return this.relationlist;
-          default:
-            return [];
-        }
-      })();
-      console.log(modeList);
-      const potentialList = modeList.filter((x) =>
+      const listMap = {'hashtag': this.hashtaglist, 'person': this.personlist, 'relation': this.relationlist};
+      const potentialList = listMap[finMode].filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
 
       this.setState({
@@ -214,6 +203,7 @@ class DraftEditor extends Component {
   }
 
   getMatchString() {
+    const { autocompleteMode } = this.state;
     const { selection, text } = this.getEditorStateProperties();
     const selectionLocation = selection.getAnchorOffset();
     this.matchString = text.slice(this.triggerLocation+1, selectionLocation);
@@ -230,18 +220,20 @@ class DraftEditor extends Component {
           return true;
         }
         this.matchString += str;
+        this.changeAutoPrefix();
       } else {
         this.triggerLocation++;
       }
-      this.changeAutoPrefix();
     }
 
     if (str == '@' || str == '#' || str == '>') {
       const { selection, text } = this.getEditorStateProperties();
       const selectionLocation = selection.getAnchorOffset();
       const prevChar = text.slice(selectionLocation-1, selectionLocation);
-      const mappedChar = prevChar == '<' && str == '>'? '<>': str;
-
+      if (prevChar != '<' && str == '>') {
+        return false;
+      }
+      const mappedChar = str == '>'? '<>': str;
       console.log(`${this.triggerMap[mappedChar]} state`);
       this.matchmappedCharing = '';
       this.setState({autocompleteMode: this.triggerMap[mappedChar]});
