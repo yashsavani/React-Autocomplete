@@ -13,7 +13,7 @@ class AutoComplete extends Component {
 
     return (
         <div className="nav">
-          <div id="autobox" className={this.props.autoState}>
+          <div id="autobox" className={this.props.autocompleteMode}>
             <ul>
               {opts.map((listValue) => <ListItem key={listValue[0]} listValue={listValue} selected={listValue[0] == this.props.selectedId} />)}
             </ul>

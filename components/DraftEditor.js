@@ -58,9 +58,15 @@ class DraftEditor extends Component {
     this.hashtaglist = [ "United-States", "China", "Japan", "Germany", "United-Kingdom", "France", "India", "Italy", "Brazil", "Canada", "South Korea", "Russia", "Australia", "Spain", "Mexico"];
     this.personlist = [ "Yash Savani", "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
 
-    this.state = {editorState: EditorState.createEmpty(decorator), autoState: 'default', selectedId: 0, activelist: []};
+    this.state = {editorState: EditorState.createEmpty(decorator), autocompleteMode: 'default', selectedId: 0, activelist: []};
     this.matchString = '';
     this.onChange = (editorState) => { this.setState({editorState}); };
+    this.onDownArrow = this.handleDownArrow.bind(this);
+    this.onUpArrow = this.handleUpArrow.bind(this);
+    this.onTab = this.handleTab.bind(this);
+    this.handleBeforeInput = this.handleTextInput.bind(this);
+    this.handleKeyCommand = this.handleKeyCommand.bind(this);
+    this.handleReturn = this.handleReturn.bind(this);
   }
 
   componentDidMount() {
@@ -68,24 +74,25 @@ class DraftEditor extends Component {
   }
 
   returnToDefault() {
-    this.setState({autoState: 'default', activelist: []});
+    this.setState({autocompleteMode: 'default', activelist: []});
   }
 
-  getSelectedOption(autoState, selectedId, activelist) {
-    if (autoState != 'default') {
-      return (autoState=='person'?'@':'#')+activelist[selectedId];
+  getSelectedOption() {
+    const { autocompleteMode, selectedId, activelist } = this.state;
+    if (autocompleteMode != 'default') {
+      return (autocompleteMode=='person'?'@':'#')+activelist[selectedId];
     }
   }
 
   updateEditor(str){
     let { editorState } = this.state;
-    const { autoState } = this.state;
+    const { autocompleteMode } = this.state;
 
     const content = editorState.getCurrentContent();
     const selection = editorState.getSelection();
     const block = content.getBlockForKey(selection.getAnchorKey());
-    const entityKey = Entity.create(autoState, 'IMMUTABLE', {name: str});
-    const replaced = Modifier.replaceText(
+    const entityKey = Entity.create(autocompleteMode, 'IMMUTABLE', {name: str});
+    const replaceWithMatchString = Modifier.replaceText(
           content,
           new SelectionState({
             anchorKey: block.getKey(),
@@ -98,16 +105,15 @@ class DraftEditor extends Component {
           null,
           entityKey
       );
-    editorState = EditorState.push(editorState, replaced, 'replace-text');
+    editorState = EditorState.push(editorState, replaceWithMatchString, 'replace-text');
     this.setState({editorState});
   }
 
   handleTab(e) {
-    const { autoState, activelist, selectedId} = this.state;
-    if (autoState != 'default') {
-      const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
-      const stateChar = autoState=='person'?'@':'#';
-      this.updateEditor(selectedOption==stateChar+'undefined'?stateChar+this.matchString:selectedOption);
+    const { autocompleteMode, activelist, selectedId} = this.state;
+    if (autocompleteMode != 'default') {
+      const selectedOption = this.getSelectedOption();
+      this.updateEditor(selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -115,11 +121,10 @@ class DraftEditor extends Component {
   }
 
   handleReturn(e) {
-    const { autoState, activelist, selectedId} = this.state;
-    if (autoState != 'default') {
-      const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
-      const stateChar = autoState=='person'?'@':'#';
-      this.updateEditor(selectedOption==stateChar+'undefined'?stateChar+this.matchString:selectedOption);
+    const { autocompleteMode, activelist, selectedId} = this.state;
+    if (autocompleteMode != 'default') {
+      const selectedOption = this.getSelectedOption(autocompleteMode, selectedId, activelist);
+      this.updateEditor(selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -130,14 +135,22 @@ class DraftEditor extends Component {
 
 
   handleKeyCommand(command) { // Backspace
-    const { autoState } = this.state;
+    const { autocompleteMode } = this.state;
 
     if (command == 'backspace') {
-      if (autoState != 'default'){
-        if (this.matchString == '') {
-          this.returnToDefault();
+      if (autocompleteMode != 'default'){
+
+
+        if (this.getMatchString()) {
+          if (this.matchString == '') {
+            this.returnToDefault();
+          } else {
+            this.matchString = this.matchString.slice(0,-1);
+          }
+        } else {
+          this.triggerLocation--;
         }
-        this.matchString = this.getMatchString().slice(0,-1);
+
         this.changeAutoPrefix();
       }
     }
@@ -145,7 +158,7 @@ class DraftEditor extends Component {
   }
 
   handleDownArrow(e) {
-    const { selectedId, autoState, activelist } = this.state;
+    const { selectedId, autocompleteMode, activelist } = this.state;
     const sid = Math.min(selectedId + 1, activelist.length-1);
     this.setState({selectedId: sid});
     e.preventDefault();
@@ -158,18 +171,19 @@ class DraftEditor extends Component {
   }
 
   changeAutoPrefix(state='default') {
-    const { autoState } = this.state;
+    const { autocompleteMode } = this.state;
 
-    if (autoState != 'default' || state != 'default') {
+    if (autocompleteMode != 'default' || state != 'default') {
       let potentialList = [];
 
-      if (autoState == 'hashtag' || state == 'hashtag') {
+      if (autocompleteMode == 'hashtag' || state == 'hashtag') {
         potentialList = this.hashtaglist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       } else {
         potentialList = this.personlist.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
       }
+
       if (this.matchString != '') {
         potentialList.unshift(this.matchString);
       }
@@ -182,61 +196,74 @@ class DraftEditor extends Component {
   }
 
   getMatchString() {
-    const { autoState, editorState } = this.state;
+    const { autocompleteMode, editorState } = this.state;
     const content = editorState.getCurrentContent();
     const selection = editorState.getSelection();
     const text = content.getBlockForKey(selection.getAnchorKey()).text;
-    const key = autoState == 'person'?'@':'#';
-    return text.slice(text.lastIndexOf(key)+1, selection.getAnchorOffset());
+    const selectionLocation = selection.getAnchorOffset();
+    this.matchString = text.slice(this.triggerLocation+1, selection.getAnchorOffset());
+    return selectionLocation >= this.triggerLocation;
   }
 
-  handleKeyUp(str) {
-    const { autoState, selectedId, activelist } = this.state;
+  handleTextInput(str) {
+    const { editorState, autocompleteMode, selectedId, activelist } = this.state;
 
-    if (autoState == 'hashtag' && str == ' ') {
-      const selectedOption = this.getSelectedOption(autoState, selectedId, activelist);
-      this.updateEditor(selectedOption=='#undefined'?'#'+this.matchString:selectedOption);
+    if (autocompleteMode == 'hashtag' && str == ' ') {
+      const selectedOption = this.getSelectedOption(autocompleteMode, selectedId, activelist);
+      this.updateEditor(selectedOption);
       this.returnToDefault();
       return true;
     }
 
-    if (autoState != 'default') {
-      this.matchString = this.getMatchString() + str;
+    if (autocompleteMode != 'default') {
+      if (this.getMatchString()) {
+        this.matchString += str;
+      } else {
+        this.triggerLocation++;
+      }
       this.changeAutoPrefix();
     }
 
     if (str == '@') {
       console.log("person state");
       this.matchString = '';
-      this.setState({autoState: 'person'});
+      this.setState({autocompleteMode: 'person'});
       this.changeAutoPrefix('person');
+
+      const content = editorState.getCurrentContent();
+      const selection = editorState.getSelection();
+      this.triggerLocation = selection.getAnchorOffset();
     } else if ( str == '#' ) {
       console.log("hashtag state");
       this.matchString = '';
-      this.setState({autoState: 'hashtag'});
+      this.setState({autocompleteMode: 'hashtag'});
       this.changeAutoPrefix('hashtag');
+
+      const content = editorState.getCurrentContent();
+      const selection = editorState.getSelection();
+      this.triggerLocation = selection.getAnchorOffset();
     }
     return false;
   }
 
   render() {
-    const { autoState, editorState, selectedId, activelist } = this.state;
+    const { autocompleteMode, editorState, selectedId, activelist } = this.state;
     return (
             <div className="content">
               <Editor
                 editorState={editorState}
                 onChange={this.onChange}
-                onDownArrow={this.handleDownArrow.bind(this)}
-                onUpArrow={this.handleUpArrow.bind(this)}
-                onTab={this.handleTab.bind(this)}
-                handleBeforeInput={this.handleKeyUp.bind(this)}
-                handleKeyCommand={this.handleKeyCommand.bind(this)}
-                handleReturn={this.handleReturn.bind(this)}
+                onDownArrow={this.onDownArrow}
+                onUpArrow={this.onUpArrow}
+                onTab={this.onTab}
+                handleBeforeInput={this.handleBeforeInput}
+                handleKeyCommand={this.handleKeyCommand}
+                handleReturn={this.handleReturn}
                 ref="editor"
               />
 
               <AutoComplete
-                autoState={autoState}
+                autocompleteMode={autocompleteMode}
                 selectedId={selectedId}
                 activelist={activelist}
               />
