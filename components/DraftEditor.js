@@ -11,32 +11,34 @@ const styles = {
   },
 };
 
-function findPerson(contentBlock, callback) {
+function findMode(mode, contentBlock, callback) {
   contentBlock.findEntityRanges(
       (character) => {
         const entityKey = character.getEntity();
-        return (entityKey !== null && Entity.get(entityKey).getType() === 'person');
+        return (entityKey !== null && Entity.get(entityKey).getType() === mode);
       },
       callback
     );
+}
+
+function findPerson(contentBlock, callback) {
+  findMode('person', contentBlock, callback);
 }
 
 function findHashtag(contentBlock, callback) {
-  contentBlock.findEntityRanges(
-      (character) => {
-        const entityKey = character.getEntity();
-        return (entityKey !== null && Entity.get(entityKey).getType() === 'hashtag');
-      },
-      callback
-    );
+  findMode('hashtag', contentBlock, callback);
+}
+
+function modeSpan(styles, children) {
+  return <span style={styles}>{children}</span>;
 }
 
 const PersonSpan = (props) => {
-  return <span style={styles.person}>{props.children}</span>;
+  return modeSpan(styles.person, props.children);
 };
 
 const HashtagSpan = (props) => {
-  return <span style={styles.hashtag}>{props.children}</span>;
+  return modeSpan(styles.hashtag, props.children);
 };
 
 class DraftEditor extends Component {
@@ -63,10 +65,10 @@ class DraftEditor extends Component {
     this.onChange = (editorState) => { this.setState({editorState}); };
     this.onDownArrow = this.handleDownArrow.bind(this);
     this.onUpArrow = this.handleUpArrow.bind(this);
-    this.onTab = this.handleTab.bind(this);
+    this.onTab = this.selectOption.bind(this);
     this.handleBeforeInput = this.handleTextInput.bind(this);
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
-    this.handleReturn = this.handleReturn.bind(this);
+    this.handleReturn = this.selectOption.bind(this);
   }
 
   componentDidMount() {
@@ -84,13 +86,20 @@ class DraftEditor extends Component {
     }
   }
 
-  updateEditor(str){
-    let { editorState } = this.state;
-    const { autocompleteMode } = this.state;
-
+  getEditorStateProperties() {
+    const { editorState } = this.state;
     const content = editorState.getCurrentContent();
     const selection = editorState.getSelection();
     const block = content.getBlockForKey(selection.getAnchorKey());
+    const text = block.text;
+    return { content, selection, block, text };
+
+  }
+
+  updateEditor(str){
+    const { autocompleteMode } = this.state;
+    const { content, selection, block } = this.getEditorStateProperties();
+
     const entityKey = Entity.create(autocompleteMode, 'IMMUTABLE', {name: str});
     const replaceWithMatchString = Modifier.replaceText(
           content,
@@ -105,25 +114,14 @@ class DraftEditor extends Component {
           null,
           entityKey
       );
-    editorState = EditorState.push(editorState, replaceWithMatchString, 'replace-text');
-    this.setState({editorState});
+    const newEditorState = EditorState.push(this.state.editorState, replaceWithMatchString, 'replace-text');
+    this.setState({editorState:newEditorState});
   }
 
-  handleTab(e) {
+  selectOption(e) {
     const { autocompleteMode, activelist, selectedId} = this.state;
     if (autocompleteMode != 'default') {
       const selectedOption = this.getSelectedOption();
-      this.updateEditor(selectedOption);
-
-      e.preventDefault();
-      this.returnToDefault();
-    }
-  }
-
-  handleReturn(e) {
-    const { autocompleteMode, activelist, selectedId} = this.state;
-    if (autocompleteMode != 'default') {
-      const selectedOption = this.getSelectedOption(autocompleteMode, selectedId, activelist);
       this.updateEditor(selectedOption);
 
       e.preventDefault();
@@ -133,14 +131,10 @@ class DraftEditor extends Component {
     return false;
   }
 
-
   handleKeyCommand(command) { // Backspace
     const { autocompleteMode } = this.state;
-
     if (command == 'backspace') {
       if (autocompleteMode != 'default'){
-
-
         if (this.getMatchString()) {
           if (this.matchString == '') {
             this.returnToDefault();
@@ -150,56 +144,45 @@ class DraftEditor extends Component {
         } else {
           this.triggerLocation--;
         }
-
         this.changeAutoPrefix();
       }
     }
     return false;
   }
 
-  handleDownArrow(e) {
+  handleArrow(e, direction) {
     const { selectedId, autocompleteMode, activelist } = this.state;
-    const sid = Math.min(selectedId + 1, activelist.length-1);
+    const sid = Math.min(selectedId + direction, activelist.length-1);
     this.setState({selectedId: sid});
     e.preventDefault();
   }
 
+  handleDownArrow(e) {
+    this.handleArrow(e, 1);
+  }
+
   handleUpArrow(e) {
-    const sid = Math.max(this.state.selectedId - 1, 0);
-    this.setState({selectedId: sid});
-    e.preventDefault();
+    this.handleArrow(e, -1);
   }
 
   changeAutoPrefix(state='default') {
     const { autocompleteMode } = this.state;
 
     if (autocompleteMode != 'default' || state != 'default') {
-      let potentialList = [];
-
-      if (autocompleteMode == 'hashtag' || state == 'hashtag') {
-        potentialList = this.hashtaglist.filter((x) =>
+      const modeList = autocompleteMode == 'hashtag' || state == 'hashtag' ? this.hashtaglist : this.personlist;
+      const potentialList = modeList.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
-      } else {
-        potentialList = this.personlist.filter((x) =>
-          x.toUpperCase().startsWith(this.matchString.toUpperCase()));
-      }
-
-      if (this.matchString != '') {
-        potentialList.unshift(this.matchString);
-      }
 
       this.setState({
         selectedId: 0,
-        activelist: potentialList
+        activelist: this.matchString!= '' ? [this.matchString].concat(potentialList) : potentialList
       });
     }
   }
 
   getMatchString() {
     const { autocompleteMode, editorState } = this.state;
-    const content = editorState.getCurrentContent();
-    const selection = editorState.getSelection();
-    const text = content.getBlockForKey(selection.getAnchorKey()).text;
+    const { content, selection, text } = this.getEditorStateProperties();
     const selectionLocation = selection.getAnchorOffset();
     this.matchString = text.slice(this.triggerLocation+1, selection.getAnchorOffset());
     return selectionLocation >= this.triggerLocation;
@@ -208,15 +191,12 @@ class DraftEditor extends Component {
   handleTextInput(str) {
     const { editorState, autocompleteMode, selectedId, activelist } = this.state;
 
-    if (autocompleteMode == 'hashtag' && str == ' ') {
-      const selectedOption = this.getSelectedOption(autocompleteMode, selectedId, activelist);
-      this.updateEditor(selectedOption);
-      this.returnToDefault();
-      return true;
-    }
-
     if (autocompleteMode != 'default') {
       if (this.getMatchString()) {
+        if (autocompleteMode == 'hashtag' && str == ' ') {
+          this.selectOption({preventDefault: () => {}});
+          return true;
+        }
         this.matchString += str;
       } else {
         this.triggerLocation++;
@@ -224,23 +204,14 @@ class DraftEditor extends Component {
       this.changeAutoPrefix();
     }
 
-    if (str == '@') {
-      console.log("person state");
-      this.matchString = '';
-      this.setState({autocompleteMode: 'person'});
-      this.changeAutoPrefix('person');
+    const triggerChar = str=='@'?'person':'hashtag';
 
-      const content = editorState.getCurrentContent();
-      const selection = editorState.getSelection();
-      this.triggerLocation = selection.getAnchorOffset();
-    } else if ( str == '#' ) {
-      console.log("hashtag state");
+    if(str == '@' || str == '#') {
+      console.log(`${triggerChar} state`);
       this.matchString = '';
-      this.setState({autocompleteMode: 'hashtag'});
-      this.changeAutoPrefix('hashtag');
-
-      const content = editorState.getCurrentContent();
-      const selection = editorState.getSelection();
+      this.setState({autocompleteMode: triggerChar});
+      this.changeAutoPrefix(triggerChar);
+      const { content, selection } = this.getEditorStateProperties();
       this.triggerLocation = selection.getAnchorOffset();
     }
     return false;
