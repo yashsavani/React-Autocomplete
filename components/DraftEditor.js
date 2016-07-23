@@ -9,6 +9,9 @@ const styles = {
   hashtag: {
     color: 'green',
   },
+  relation: {
+    color: 'blue',
+  }
 };
 
 function findMode(mode, contentBlock, callback) {
@@ -29,6 +32,10 @@ function findHashtag(contentBlock, callback) {
   findMode('hashtag', contentBlock, callback);
 }
 
+function findRelation(contentBlock, callback) {
+  findMode('relation', contentBlock, callback);
+}
+
 function modeSpan(styles, children) {
   return <span style={styles}>{children}</span>;
 }
@@ -39,6 +46,10 @@ const PersonSpan = (props) => {
 
 const HashtagSpan = (props) => {
   return modeSpan(styles.hashtag, props.children);
+};
+
+const RelationSpan = (props) => {
+  return modeSpan(styles.relation, props.children);
 };
 
 class DraftEditor extends Component {
@@ -55,10 +66,17 @@ class DraftEditor extends Component {
         strategy: findHashtag,
         component: HashtagSpan,
       },
+      {
+        strategy: findRelation,
+        component: RelationSpan,
+      },
     ]);
 
-    this.hashtaglist = [ "United-States", "China", "Japan", "Germany", "United-Kingdom", "France", "India", "Italy", "Brazil", "Canada", "South Korea", "Russia", "Australia", "Spain", "Mexico"];
-    this.personlist = [ "Yash Savani", "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
+    this.modeMap = {'person': '@', 'hashtag': '#', 'relation': '<>'};
+    this.triggerMap = {'@':'person', '#':'hashtag', '<>':'relation'};
+    this.hashtaglist = ["United-States", "China", "Japan", "Germany", "United-Kingdom", "France", "India", "Italy", "Brazil", "Canada", "South Korea", "Russia", "Australia", "Spain", "Mexico"];
+    this.personlist = ["Yash Savani", "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
+    this.relationlist = ["Sibling", "Uncle", "Aunt", "Parent", "Child"];
 
     this.state = {editorState: EditorState.createEmpty(decorator), autocompleteMode: 'default', selectedId: 0, activelist: []};
     this.matchString = '';
@@ -79,10 +97,11 @@ class DraftEditor extends Component {
     this.setState({autocompleteMode: 'default', activelist: []});
   }
 
+
   getSelectedOption() {
     const { autocompleteMode, selectedId, activelist } = this.state;
     if (autocompleteMode != 'default') {
-      return (autocompleteMode=='person'?'@':'#')+activelist[selectedId];
+      return this.modeMap[autocompleteMode]+activelist[selectedId];
     }
   }
 
@@ -165,11 +184,25 @@ class DraftEditor extends Component {
     this.handleArrow(e, -1);
   }
 
-  changeAutoPrefix(state='default') {
+  changeAutoPrefix(mode=undefined) {
     const { autocompleteMode } = this.state;
+    const finMode = mode == undefined ? autocompleteMode : mode;
 
-    if (autocompleteMode != 'default' || state != 'default') {
-      const modeList = autocompleteMode == 'hashtag' || state == 'hashtag' ? this.hashtaglist : this.personlist;
+    if (finMode != 'default') {
+
+      const modeList = (() => {
+        switch (finMode) {
+          case 'hashtag':
+            return this.hashtaglist;
+          case 'person':
+            return this.personlist;
+          case 'relation':
+            return this.relationlist;
+          default:
+            return [];
+        }
+      })();
+      console.log(modeList);
       const potentialList = modeList.filter((x) =>
           x.toUpperCase().startsWith(this.matchString.toUpperCase()));
 
@@ -181,10 +214,9 @@ class DraftEditor extends Component {
   }
 
   getMatchString() {
-    const { autocompleteMode, editorState } = this.state;
-    const { content, selection, text } = this.getEditorStateProperties();
+    const { selection, text } = this.getEditorStateProperties();
     const selectionLocation = selection.getAnchorOffset();
-    this.matchString = text.slice(this.triggerLocation+1, selection.getAnchorOffset());
+    this.matchString = text.slice(this.triggerLocation+1, selectionLocation);
     return selectionLocation >= this.triggerLocation;
   }
 
@@ -204,14 +236,16 @@ class DraftEditor extends Component {
       this.changeAutoPrefix();
     }
 
-    const triggerChar = str=='@'?'person':'hashtag';
+    if (str == '@' || str == '#' || str == '>') {
+      const { selection, text } = this.getEditorStateProperties();
+      const selectionLocation = selection.getAnchorOffset();
+      const prevChar = text.slice(selectionLocation-1, selectionLocation);
+      const mappedChar = prevChar == '<' && str == '>'? '<>': str;
 
-    if(str == '@' || str == '#') {
-      console.log(`${triggerChar} state`);
-      this.matchString = '';
-      this.setState({autocompleteMode: triggerChar});
-      this.changeAutoPrefix(triggerChar);
-      const { content, selection } = this.getEditorStateProperties();
+      console.log(`${this.triggerMap[mappedChar]} state`);
+      this.matchmappedCharing = '';
+      this.setState({autocompleteMode: this.triggerMap[mappedChar]});
+      this.changeAutoPrefix(this.triggerMap[mappedChar]);
       this.triggerLocation = selection.getAnchorOffset();
     }
     return false;
