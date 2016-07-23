@@ -2,18 +2,6 @@ import React, { Component } from 'react';
 import {Editor, EditorState, SelectionState, Entity, Modifier, CompositeDecorator} from 'draft-js';
 import AutoComplete from './AutoComplete'
 
-const styles = {
-  person: {
-    color: 'red',
-  },
-  hashtag: {
-    color: 'green',
-  },
-  relation: {
-    color: 'blue',
-  }
-};
-
 function findMode(mode, contentBlock, callback) {
   contentBlock.findEntityRanges(
       (character) => {
@@ -36,20 +24,20 @@ function findRelation(contentBlock, callback) {
   findMode('relation', contentBlock, callback);
 }
 
-function modeSpan(styles, children) {
-  return <span style={styles}>{children}</span>;
+function modeSpan(className, children) {
+  return <span className={className}>{children}</span>;
 }
 
 const PersonSpan = (props) => {
-  return modeSpan(styles.person, props.children);
+  return modeSpan('person', props.children);
 };
 
 const HashtagSpan = (props) => {
-  return modeSpan(styles.hashtag, props.children);
+  return modeSpan('hashtag', props.children);
 };
 
 const RelationSpan = (props) => {
-  return modeSpan(styles.relation, props.children);
+  return modeSpan('relation', props.children);
 };
 
 class DraftEditor extends Component {
@@ -247,6 +235,7 @@ class DraftEditor extends Component {
     const { autocompleteMode, editorState, selectedId, activelist } = this.state;
     return (
             <div className="content">
+              <h4>To trigger the Autocomplete functionality, type '#' for hashtags, '@' for people or '&lt;&gt;' for relations.</h4>
               <Editor
                 editorState={editorState}
                 onChange={this.onChange}

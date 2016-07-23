@@ -250,6 +250,9 @@ Wide styles
 .hashtag {
   color: green;
 }
+.relation {
+  color: blue;
+}
 
 .public-DraftEditorPlaceholder-root {
   color: gray;
