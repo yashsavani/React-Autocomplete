@@ -104,7 +104,7 @@ class DraftEditor extends Component {
 
   }
 
-  updateEditor(str){
+  updateEditorWithAutocomplete(str){
     const { autocompleteMode } = this.state;
     const { content, selection, block } = this.getEditorStateProperties();
     const offset = autocompleteMode == 'relation'?2:1;
@@ -131,7 +131,7 @@ class DraftEditor extends Component {
     const { autocompleteMode, activelist, selectedId} = this.state;
     if (autocompleteMode != 'default') {
       const selectedOption = this.getSelectedOption();
-      this.updateEditor(selectedOption);
+      this.updateEditorWithAutocomplete(selectedOption);
 
       e.preventDefault();
       this.returnToDefault();
@@ -144,7 +144,7 @@ class DraftEditor extends Component {
     const { autocompleteMode } = this.state;
     if (command == 'backspace') {
       if (autocompleteMode != 'default'){
-        if (this.getMatchString()) {
+        if (this.setMatchString()) {
           if (this.matchString == '') {
             this.returnToDefault();
           } else {
@@ -190,7 +190,7 @@ class DraftEditor extends Component {
     }
   }
 
-  getMatchString() {
+  setMatchString() {
     const { autocompleteMode } = this.state;
     const { selection, text } = this.getEditorStateProperties();
     const selectionLocation = selection.getAnchorOffset();
@@ -202,7 +202,7 @@ class DraftEditor extends Component {
     const { editorState, autocompleteMode, selectedId, activelist } = this.state;
 
     if (autocompleteMode != 'default') {
-      if (this.getMatchString()) {
+      if (this.setMatchString()) {
         if (autocompleteMode == 'hashtag' && str == ' ') {
           this.selectOption({preventDefault: () => {}});
           return true;
