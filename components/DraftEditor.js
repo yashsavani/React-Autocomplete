@@ -142,7 +142,7 @@ class DraftEditor extends Component {
     return false;
   }
 
-  handleKeyCommand(command) { // Backspace
+  handleKeyCommand(command) {
     const { autocompleteMode } = this.state;
     if (command == 'backspace') {
       if (autocompleteMode != 'default'){
@@ -217,9 +217,19 @@ class DraftEditor extends Component {
     }
 
     if (str == '@' || str == '#' || str == '>') {
-      const { selection, text } = this.getEditorStateProperties();
+      const { block, selection, text } = this.getEditorStateProperties();
       const selectionLocation = selection.getAnchorOffset();
       const prevChar = text.slice(selectionLocation-1, selectionLocation);
+
+      if (selectionLocation > 0) {
+        const entityKey = block.getEntityAt(selectionLocation-1);
+        if (entityKey != null) {
+          if (prevChar == '<' && str == '>') {
+            return false;
+          }
+        }
+      }
+
       if (prevChar != '<' && str == '>') {
         return false;
       }
