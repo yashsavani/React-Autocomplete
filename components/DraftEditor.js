@@ -70,11 +70,6 @@ class DraftEditor extends Component {
     this.matchString = '';
     this.onChange = (editorState) => {
       this.setState({editorState});
-      const selection = global.getSelection();
-      const range = selection.getRangeAt(0);
-      const boundingRect = range.getBoundingClientRect();
-      const {top, right, bottom, left} = boundingRect;
-      this.setState({boundingRect: [top, right, bottom, left]});
     };
     this.onDownArrow = this.handleDownArrow.bind(this);
     this.onUpArrow = this.handleUpArrow.bind(this);
@@ -235,6 +230,15 @@ class DraftEditor extends Component {
       this.changeAutoPrefix(this.triggerMap[mappedChar]);
       this.triggerLocation = selection.getAnchorOffset();
     }
+
+    setTimeout(() => {
+      const selection = global.getSelection();
+      const range = selection.getRangeAt(0);
+      const boundingRect = range.getBoundingClientRect();
+      const {top, right, bottom, left} = boundingRect;
+      this.setState({boundingRect: [top, right, bottom, left]});
+    },1);
+
     return false;
   }
 
@@ -263,7 +267,6 @@ class DraftEditor extends Component {
               />
             </div>
           );
-
   }
 }
 
