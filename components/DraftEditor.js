@@ -66,9 +66,16 @@ class DraftEditor extends Component {
     this.personlist = ["Yash Savani", "David", "Barbara", "Philip", "Judy", "Virginia", "Martin", "Roger", "Frances", "Janet", "Michelle"];
     this.relationlist = ["Sibling", "Uncle", "Aunt", "Parent", "Child"];
 
-    this.state = {editorState: EditorState.createEmpty(decorator), autocompleteMode: 'default', selectedId: 0, activelist: []};
+    this.state = {editorState: EditorState.createEmpty(decorator), autocompleteMode: 'default', selectedId: 0, activelist: [], boundingRect: [0,0,0,0]};
     this.matchString = '';
-    this.onChange = (editorState) => { this.setState({editorState}); };
+    this.onChange = (editorState) => {
+      this.setState({editorState});
+      const selection = global.getSelection();
+      const range = selection.getRangeAt(0);
+      const boundingRect = range.getBoundingClientRect();
+      const {top, right, bottom, left} = boundingRect;
+      this.setState({boundingRect: [top, right, bottom, left]});
+    };
     this.onDownArrow = this.handleDownArrow.bind(this);
     this.onUpArrow = this.handleUpArrow.bind(this);
     this.onTab = this.selectOption.bind(this);
@@ -232,7 +239,7 @@ class DraftEditor extends Component {
   }
 
   render() {
-    const { autocompleteMode, editorState, selectedId, activelist } = this.state;
+    const { autocompleteMode, editorState, selectedId, activelist, boundingRect } = this.state;
     return (
             <div className="content">
               <h4>To trigger the Autocomplete functionality, type '#' for hashtags, '@' for people or '&lt;&gt;' for relations.</h4>
@@ -252,6 +259,7 @@ class DraftEditor extends Component {
                 autocompleteMode={autocompleteMode}
                 selectedId={selectedId}
                 activelist={activelist}
+                boundingRect={boundingRect}
               />
             </div>
           );
